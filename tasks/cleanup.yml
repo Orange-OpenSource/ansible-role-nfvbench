@@ -1,0 +1,187 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Delete the generator VM
+  openstack.cloud.server:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ generator_vm[0].server_name }}"
+    delete_fip: yes
+    validate_certs: "{{ validate_certs }}"
+
+- name: Delete the loop VM
+  openstack.cloud.server:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ nfvbench_config.loop_vm_name }}0"
+    delete_fip: yes
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - nfvbench_config is defined
+    - nfvbench_config.loop_vm_name is defined
+
+- name: Delete the Router
+  openstack.cloud.router:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: absent
+    name: "{{ router_name }}"
+    validate_certs: "{{ validate_certs }}"
+
+- name: Delete the port
+  openstack.cloud.port:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ item.port_name }}"
+    network: "{{ item.network_name }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items:
+    - "{{ generator_networks }}"
+    - "{{ management_networks }}"
+  when:
+    - item.port_name is defined
+
+- name: Get loop VM ports list (left)
+  openstack.cloud.port_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    port: "{{ nfvbench_config.loop_vm_name }}0-0"
+    validate_certs: "{{ validate_certs }}"
+  register: loopvm_left_ports
+
+- name: Delete loop VM left port
+  openstack.cloud.port:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ item.id }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items:
+    - "{{ loopvm_left_ports.openstack_ports }}"
+
+- name: Get loop VM ports list (right)
+  openstack.cloud.port_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    port: "{{ nfvbench_config.loop_vm_name }}0-1"
+    validate_certs: "{{ validate_certs }}"
+  register: loopvm_right_ports
+
+- name: Delete loop VM right port
+  openstack.cloud.port:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ item.id }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items:
+    - "{{ loopvm_right_ports.openstack_ports }}"
+
+- name: Delete the subnet
+  openstack.cloud.subnet:
+    state: absent
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ item.subnet_name }}"
+    network_name: "{{ item.network_name }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items:
+    - "{{ generator_networks }}"
+    - "{{ loop_vm_networks }}"
+    - "{{ management_networks }}"
+  when:
+    - item.cleanup is defined
+    - item.cleanup|bool
+
+- name: Delete the network
+  openstack.cloud.network:
+    state: absent
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.network_name }}"
+    provider_physical_network: "{{ item.physical_network | default(omit) }}"
+    provider_network_type: "{{ item.network_type | default(omit) }}"
+    provider_segmentation_id: "{{ item.segmentation_id | default(omit) | int }}"
+    external: "{{ item.external }}"
+    shared: "{{ item.shared }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items:
+    - "{{ generator_networks }}"
+    - "{{ loop_vm_networks }}"
+    - "{{ management_networks }}"
+  when:
+    - admin | bool
+    - item.cleanup is defined
+    - item.cleanup|bool
+
+- name: Delete nfvbench security group
+  openstack.cloud.security_group:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: absent
+    name: "{{ security_group_name }}"
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - security_group_name is defined
+    - security_group_name
+
+- name: Delete flavor
+  openstack.cloud.compute_flavor:
+    cloud: "{{ cloud_detail }}"
+    state: absent
+    name: "{{ item.flavor_name }}"
+    validate_certs: "{{ validate_certs }}"
+  with_items: "{{ flavors }}"
+  when: admin | bool
+
+- name: Get generator image info
+  openstack.cloud.image_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    image: "{{ generator_image_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: generator_image
+
+- name: Delete generator image
+  openstack.cloud.image:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ generator_image_name }}"
+    state: absent
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - admin | bool
+    - generator_image.openstack_image.owner == project_id
+
+- name: Get loopvm image info
+  openstack.cloud.image_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    image: "{{ loop_vm_image_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: loop_vm_image
+
+- name: Delete loopvm image
+  openstack.cloud.image:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ loop_vm_image_name }}"
+    state: absent
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - admin | bool
+    - loop_vm_image.openstack_image.owner == project_id
+
+- name: Delete NFVbench project
+  openstack.cloud.project:
+    state: absent
+    cloud: "{{ cloud_detail }}"
+    name: "{{ project_name }}"
+    domain_id: "{{ project_domain_name }}"
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - admin | bool
+    - tenant_creation | bool
+
+- name: Delete user
+  openstack.cloud.identity_user:
+    state: absent
+    cloud: "{{ cloud_detail }}"
+    name: "{{ username }}"
+    domain: "{{ user_domain_name }}"
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - admin | bool
+    - user_creation | bool

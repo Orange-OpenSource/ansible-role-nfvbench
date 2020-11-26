@@ -1,0 +1,89 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: get VM info
+  openstack.cloud.server_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    server: "{{ generator_vm[0].server_name }}"
+    filters:
+      vm_state: active
+    validate_certs: "{{ validate_certs }}"
+  register: result
+
+- name: get management network name
+  set_fact:
+    mgmt_net: "{{ item.network_name }}"
+  when:
+    - item.topology is not defined
+  with_items:
+    - "{{ management_networks }}"
+
+- name: Get VM floating IP
+  set_fact:
+    nfvbench_vm_ip: "{{ item.addr }}"
+  when:
+    - item['OS-EXT-IPS:type'] == "floating"
+  with_items:
+    - "{{ result.openstack_servers[0].addresses[mgmt_net] }}"
+
+- name: Ensure group exists in inventory to include nfvbench-vm details
+  add_host:
+    name: nfvbench-vm
+    groups: generator
+    state: present
+
+- name: Check private key file exists
+  stat:
+    path: "{{ playbook_dir }}/{{ generator_vm[0].keypair_name }}.pem"
+  register: key
+
+- name: Add host details for nfvbench-vm in generator hostname variable (using password auth)
+  add_host:
+    hostname: generator
+    ansible_host: "{{ nfvbench_vm_ip }}"
+    ansible_user: nfvbench
+    ansible_ssh_pass: nfvbench
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+  when:
+    - not key.stat.exists
+
+- name: Add host details for nfvbench-vm in generator hostname variable (using SSH key)
+  add_host:
+    hostname: generator
+    ansible_host: "{{ nfvbench_vm_ip }}"
+    ansible_ssh_private_key_file: "{{ playbook_dir }}/{{ generator_vm[0].keypair_name }}.pem"
+    ansible_user: cloud-user
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+  when:
+    - key.stat.exists
+
+- name: Wait for VM to be available
+  wait_for:
+    port: 22
+    host: "{{ nfvbench_vm_ip }}"
+    timeout: 10
+    search_regex: OpenSSH
+    delay: 5
+  register: ssh_wait_check
+  retries: 20
+  delay: 5
+  until: ssh_wait_check is succeeded
+  become: true
+  no_log: true
+
+- name: health check NFVbench is running
+  uri:
+    url: "http://{{ nfvbench_vm_ip }}:7555/version"
+    method: GET
+    return_content: yes
+  register: _result
+  until: _result.status == 200
+  retries: 720  # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5  # Every 5 seconds
+- name: NFVbench running version
+  debug:
+    msg: "{{ _result.content }}"

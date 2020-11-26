@@ -1,0 +1,105 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Retrieve management network information
+  set_fact:
+    mgmt_cidr: "{{ mgmt_port.ip_address + '/' + item.cidr | regex_replace('.*\/(.*).*', '\\1') }}"
+    mgmt_ipgw: "{{ item.gateway }}"
+  with_items:
+    - "{{ management_networks }}"
+  when:
+    - mgmt_port is defined
+    - item.network_name is defined
+    - item.network_name == mgmt_port.network_name
+
+- name: Filter loopback networks
+  set_fact:
+    loopback_data_ports: "{{ loopback_data_ports | default([]) + [item] }}"
+  with_items:
+    - "{{ data_ports }}"
+  when:
+    - item.topology is defined
+    - item.topology == 'loopback' or item.topology == 'loopback_e2e'
+
+- name: Filter E2E netorks
+  set_fact:
+    e2e_data_ports: "{{ e2e_data_ports | default([]) + [item] }}"
+  with_items:
+    - "{{ data_ports }}"
+  when:
+    - item.topology is defined
+    - item.topology == 'e2e' or item.topology == 'loopback_e2e'
+
+- name: Create the nfvbench VM config
+  template:
+    src: nfvbenchvm.conf.j2
+    dest: nfvbenchvm.conf
+    mode: '0644'
+
+- name: Create keypair
+  openstack.cloud.keypair:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    name: "{{ generator_vm[0].keypair_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: keypair
+  when:
+    - generator_vm[0].keypair_name is defined
+  no_log: true
+
+- name: Save private key
+  copy:
+    content: "{{ keypair.key.private_key }}"
+    dest: "{{ playbook_dir }}/{{ keypair.id }}.pem"
+    mode: 0700
+  when:
+    - keypair is defined
+    - keypair is changed
+  no_log: true
+
+- name: Create the server {{ generator_vm[0].server_name }}
+  openstack.cloud.server:
+    state: present
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ generator_vm[0].server_name }}"
+    flavor: "{{ generator_vm[0].flavor_name }}"
+    image: "{{ generator_vm[0].image_name }}"
+    auto_ip: False
+    availability_zone: "{{ generator_vm[0].zone_name }}"
+    key_name: "{{ generator_vm[0].keypair_name }}"
+    security_groups: "{{ generator_vm[0].security_groups }}"
+    nics: "{{ ports | join(',') }}"
+    config_drive: true
+    userdata: |
+      {%- raw -%}#!/bin/bash
+          mkdir -p /etc/nfvbench
+          echo "{% endraw -%}{{ lookup('file', 'nfvbenchvm.conf') }}{%- raw -%}" >> /etc/nfvbenchvm.conf
+          echo {% endraw -%}{{ lookup('file', 'loopback.cfg')  | quote }}{%- raw -%} >> /etc/nfvbench/loopback.cfg
+          echo {% endraw -%}{{ lookup('file', 'e2e.cfg')  | quote }}{%- raw -%} >> /etc/nfvbench/e2e.cfg
+          echo "{% endraw -%}{{ lookup('file', cacert_file_name) }}{%- raw -%}" >> /etc/nfvbench/cacert.pem
+          echo "{% endraw -%}{{ lookup('file', 'clouds-nfvbench.yaml') | b64encode }}{%- raw -%}" >> /etc/openstack/clouds-encoded.yaml
+          base64 -d /etc/openstack/clouds-encoded.yaml > /etc/openstack/clouds.yaml
+          /etc/rc.local
+      {% endraw %}
+    validate_certs: "{{ validate_certs }}"
+  register: nfvbench_vm
+
+- name: Attach floating ip from external network
+  openstack.cloud.os_floating_ip:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    network: "{{ external_network_name }}"
+    nat_destination: "{{ mgmt_port.network_name }}"
+    server: "{{ nfvbench_vm.id }}"
+    reuse: true
+    wait: true
+    timeout: "{{ floating_ip_timeout | int }}"
+    validate_certs: "{{ validate_certs }}"
+  register: floating_ip
+  ignore_errors: true
+  when:
+    - mgmt_port is defined

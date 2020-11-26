@@ -1,0 +1,35 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Create the tenant network for generator
+  openstack.cloud.network:
+    state: present
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.0.network_name }}"
+    project: "{{ project_id }}"
+    external: "{{ item.0.external }}"
+    shared: "{{ item.0.shared }}"
+  when:
+    - admin | bool
+    - item.0.network_name is defined
+    - item.0.physical_network is not defined
+
+- name: Create the provider network for generator
+  openstack.cloud.network:
+    state: present
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.0.network_name }}"
+    project: "{{ project_id }}"
+    provider_physical_network: "{{ item.0.physical_network | default(omit) }}"
+    provider_network_type: "{{ item.0.network_type | default(omit) }}"
+    provider_segmentation_id: "{{ item.1 | default(omit) | int }}"
+    external: "{{ item.0.external }}"
+    shared: "{{ item.0.shared }}"
+  when:
+    - admin | bool
+    - item.0.network_name is defined
+    - item.0.physical_network is defined

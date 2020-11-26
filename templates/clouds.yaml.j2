@@ -1,0 +1,14 @@
+auth:
+  auth_url: {{ OS_AUTH_URL }}
+  username: {{ OS_USERNAME }}
+  password: {{ OS_PASSWORD }}
+  project_name: {{ OS_PROJECT_NAME }}
+  project_domain_name: {{ OS_PROJECT_DOMAIN_NAME }}
+  user_domain_name: {{ OS_USER_DOMAIN_NAME }}
+  project_id: {{ OS_PROJECT_ID }}
+{% if OS_CACERT is defined %}
+cacert: {{ OS_CACERT }}
+{% endif %}
+identity_api_version: "3"
+region_name: {{ OS_REGION_NAME }}
+interface: public

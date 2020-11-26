@@ -1,0 +1,139 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Run NFVbench role
+  block:
+    - name: Register NFVbench VNIC type from env
+      set_fact:
+        nfvbench_network_vnic_type: "{{ lookup('env', 'NFVBENCH_NETWORK_VNIC_TYPE') | default('direct', True) }}"
+
+    - name: Check if a NFVbench template vars file exists
+      stat:
+        path: "{{ lookup('env', 'extra_vars') }}.j2"
+      register: extra_vars_template
+      ignore_errors: true
+      no_log: true
+    - name: Create NFVbench vars file
+      template:
+        src: "{{ lookup('env', 'extra_vars') }}.j2"
+        dest: "{{ lookup('env', 'extra_vars') }}"
+        mode: '0644'
+      when:
+        - extra_vars_template.stat.exists
+      no_log: true
+    - name: Check if NFVbench vars file exists
+      stat:
+        path: "{{ lookup('env', 'extra_vars') }}"
+      register: extra_vars
+      ignore_errors: true
+      no_log: true
+    - name: Load extra_vars
+      include_vars: "{{ lookup('env', 'extra_vars') }}"
+      when:
+        - extra_vars.stat.exists
+      no_log: true
+    - name: Check user is admin
+      openstack.cloud.identity_user_info:
+        cloud: "{{ cloud_detail }}"
+        validate_certs: "{{ validate_certs }}"
+      register: user_info
+      ignore_errors: true
+      no_log: true
+    - name: Register admin status
+      set_fact:
+        admin: False
+      when:
+        - user_info is failed
+    - include_tasks: create_tenant.yml
+      when: deploy | bool
+    - include_tasks: generate_user_creds.yml
+    - include_tasks: create_flavor.yml
+      with_items: "{{ flavors }}"
+      when:
+        - admin | bool
+        - deploy | bool
+    - include_tasks: security_group.yml
+      when:
+        - deploy | bool
+        - security_group_name is defined
+        - security_group_name
+    - include_tasks: create_management_network.yml
+      with_items: "{{ management_networks }}"
+      when:
+        - deploy | bool
+        - management_networks is defined
+    - include_tasks: create_subnet.yml
+      with_items: "{{ management_networks }}"
+      when:
+        - deploy | bool
+        - management_networks is defined
+    - include_tasks: create_port.yml
+      with_items: "{{ management_networks }}"
+      when:
+        - deploy | bool
+        - item.port_name is defined
+    - include_tasks: create_loopvm_network.yml
+      with_items: "{{ loop_vm_networks }}"
+      when:
+        - deploy | bool
+        - loop_vm_networks is defined
+    - include_tasks: create_subnet.yml
+      with_items: "{{ loop_vm_networks }}"
+      when:
+        - deploy | bool
+        - loop_vm_networks is defined
+    - name: filter e2e generator networks
+      set_fact:
+        generator_networks_e2e: "{{ generator_networks_e2e | default([]) + [item] }}"
+      with_items: "{{ generator_networks }}"
+      when:
+        - deploy | bool
+        - item.topology is defined
+        - item.topology == 'e2e' or item.topology == 'loopback_e2e'
+    - include_tasks: create_generator_network.yml
+      with_together:
+        - "{{ generator_networks_e2e }}"
+        - "{{ e2e_vlans }}"
+      when:
+        - deploy | bool
+        - generator_networks_e2e is defined
+    - name: filter loopback generator networks
+      set_fact:
+        generator_networks_loopback: "{{ generator_networks_loopback | default([]) + [item] }}"
+      with_items: "{{ generator_networks }}"
+      when:
+        - deploy | bool
+        - item.topology is defined
+        - item.topology == 'loopback'
+    - include_tasks: create_generator_network.yml
+      with_together:
+        - "{{ generator_networks_loopback }}"
+        - "{{ loopback_vlans }}"
+      when:
+        - deploy | bool
+        - generator_networks_loopback is defined
+    - include_tasks: create_subnet.yml
+      with_items: "{{ generator_networks }}"
+      when: deploy | bool
+    - include_tasks: create_port.yml
+      with_items: "{{ generator_networks }}"
+      when: deploy | bool
+    - include_tasks: create_router.yml
+      when: deploy | bool
+    - include_tasks: create_config.yml
+      when: deploy | bool
+    - include_tasks: upload_image.yml
+      when: deploy | bool
+    - include_tasks: create_server.yml
+      when: deploy | bool
+    - include_tasks: healthcheck.yml
+      when: deploy | bool or run_test | bool
+    - include_tasks: run_test.yml
+      when: run_test | bool
+  always:
+    - include_tasks: cleanup.yml
+      when: cleanup | bool

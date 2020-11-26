@@ -1,0 +1,102 @@
+clouds_detail: openstack
+
+{% for nfvbkey in nfvbench_config %}
+{% if nfvbkey == "traffic_generator" %}
+traffic_generator:
+{% for key in nfvbench_config.traffic_generator %}
+{% if key == "generator_profile" %}
+{% for item in nfvbench_config.traffic_generator.generator_profile %}
+    generator_profile:
+        - name: [[ item.name ]]
+          tool: [[ item.tool ]] 
+          ip: [[ item.ip ]] 
+          zmq_pub_port: [[ item.zmq_pub_port ]] 
+          zmq_rpc_port: [[ item.zmq_rpc_port ]] 
+          software_mode: [[ item.software_mode ]] 
+          cores: {{CORES}}
+          platform:
+            master_thread_id: '0'
+            latency_thread_id: '1'
+            dual_if:
+              - socket: 0
+                threads: [{{CORE_THREADS}}]
+
+          interfaces:
+            - port: 0
+              pci: "{{PCI_ADDRESS_1}}"
+              switch:
+            - port: 1
+              pci: "{{PCI_ADDRESS_2}}"
+              switch:
+          intf_speed:
+{% endfor %}
+{% else %}
+    [[ key ]]: [[ nfvbench_config.traffic_generator[key] ]]
+{% endif %}
+{% endfor %}
+{% elif nfvbkey == "fluentd" %}
+fluentd:
+  - logging_tag: [[ nfvbench_config.fluentd.logging_tag ]]
+    result_tag: [[ nfvbench_config.fluentd.result_tag ]]
+    ip: [[ nfvbench_config.fluentd.ip ]]
+    port: [[ nfvbench_config.fluentd.port ]]
+{% else %}
+[[ nfvbkey ]]: [[ nfvbench_config[nfvbkey] ]]
+{% endif %}
+{% endfor %}
+
+{% if nfvbench_config.service_chain is defined %}
+{% if nfvbench_config.service_chain == 'PVP' %}
+internal_networks:
+    left:
+        name: [[ internal_networks[0].network_name ]]
+        subnet: [[ internal_networks[0].subnet_name ]]
+        cidr: [[ internal_networks[0].cidr ]]
+        network_type: [[ internal_networks[0].network_type ]]
+        mpls_transport_labels: [[ internal_networks[0].mpls_transport_labels | default(None) ]]
+    right:
+        name: [[ internal_networks[1].network_name ]]
+        subnet: [[ internal_networks[1].subnet_name ]]
+        cidr: [[ internal_networks[1].cidr ]]
+        network_type: [[ internal_networks[1].network_type ]]
+        mpls_transport_labels: [[ internal_networks[1].mpls_transport_labels | default(None) ]]
+{% endif %}
+{% endif %}
+
+{% if management_networks is defined %}
+{% for item in management_networks %}
+{% if item.loopvm_management_port is defined %}
+use_management_port: [[ item.loopvm_management_port ]]
+
+management_network:
+    name: [[ item.network_name ]]
+    subnet: [[ item.subnet_name ]]
+    cidr: [[ item.cidr ]]
+    gateway: [[ item.gateway ]]
+    network_type: [[ item.network_type ]]
+    segmentation_id: [[ item.segmentation_id ]]
+    physical_network: [[ item.physical_network ]]
+
+{% if item.loopvm_use_floating_ip is defined %}
+use_floating_ip: [[ item.loopvm_use_floating_ip ]]
+
+floating_network:
+    name: [[ item.floating_network.network_name ]]
+    subnet: [[ item.floating_network.subnet_name ]]
+    cidr: [[ item.floating_network.cidr ]]
+    network_type: [[ item.floating_network.network_type ]]
+    segmentation_id: [[ item.floating_network.segmentation_id ]]
+    physical_network: [[ item.floating_network.physical_network ]]
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if file_name == 'loopback.cfg' %}
+l2_loopback: true
+{% endif %}
+
+
+{% if vlans is defined %}
+vlans: [[ vlans ]]
+{% endif %}

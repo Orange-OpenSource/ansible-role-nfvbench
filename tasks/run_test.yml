@@ -1,0 +1,88 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Override nfvbench configuration
+  copy:
+    src: e2e.cfg
+    dest: /etc/nfvbench/e2e.cfg
+    mode: 0644
+  delegate_to: generator
+  become: true
+  when:
+    - nfvbench_vm is defined
+    - not nfvbench_vm is changed
+
+- name: Reload nfvbench configuration
+  command: /nfvbench/configure-nfvbench.sh
+  delegate_to: generator
+  become: true
+  when:
+    - nfvbench_vm is defined
+    - not nfvbench_vm is changed
+
+- name: Start nfvbench with accurate configuration
+  command: /nfvbench/start-nfvbench.sh {{ generator_scenario }}
+  delegate_to: generator
+  become: true
+  register: nfvbench_start
+  changed_when: '"NFVbench running in screen" in nfvbench_start.stdout'
+
+- name: Init NFVbench environment variables for behave test scenario
+  set_fact:
+    NFVBENCH_ENV: "{{ NFVBENCH_ENV | default({}) }}"
+- name: Set NFVbench environment variables for behave test scenario
+  set_fact:
+    NFVBENCH_ENV: "{{ NFVBENCH_ENV | combine({item: lookup('env', item)}) }}"
+  with_items: "{{ ansible_env }}"
+  when:
+    - item is match("NFVB.*")
+    - lookup('env', item)
+
+- name: Run tests
+  block:
+    - name: Run Xtesting NFVbench scenario
+      command: run_tests -t {{ test_case }} -p -r
+      environment:
+        - S3_ENDPOINT_URL: "{{ lookup('env', 'S3_ENDPOINT_URL') }}"
+        - S3_DST_URL: "{{ lookup('env', 'S3_DST_URL') }}"
+        - HTTP_DST_URL: "{{ lookup('env', 'HTTP_DST_URL') }}"
+        - AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        - AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        - TEST_DB_URL: "{{ lookup('env', 'TEST_DB_URL') }}"
+        - TEST_DB_EXT_URL: "{{ lookup('env', 'TEST_DB_EXT_URL') }}"
+        - NODE_NAME: "{{ lookup('env', 'NODE_NAME') }}"
+        - BUILD_TAG: "{{ lookup('env', 'BUILD_TAG') }}"
+        - "{{ NFVBENCH_ENV }}"
+      register: result
+      failed_when:
+        - "'Traceback' in result.stdout or 'TrafficClientException' in result.stdout or 'Result.EX_ERROR' in result.stdout"
+      delegate_to: generator
+      become: true
+      changed_when: false
+      no_log: false
+  always:
+    - name: Compress results
+      archive:
+        path: /var/lib/xtesting/results
+        dest: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz
+        format: gz
+        mode: 0644
+      delegate_to: generator
+      become: true
+      no_log: true
+      when:
+        - dump_results
+    - name: Dump results archive
+      fetch:
+        src: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz
+        dest: "{{ dump_path }}"
+        flat: yes
+      delegate_to: generator
+      become: true
+      no_log: true
+      when:
+        - dump_results

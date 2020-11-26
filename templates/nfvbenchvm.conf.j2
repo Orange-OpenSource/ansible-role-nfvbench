@@ -1,0 +1,22 @@
+{% for item in loopback_data_ports %}
+LOOPBACK_PORT_NAME{{ loop.index }}={{ item.port_name }}
+{% if item.vnic_type != 'direct-physical' %}
+LOOPBACK_INTF_MAC{{ loop.index }}={{ item.mac_address }}
+{% endif %}
+{% endfor %}
+{% for item in e2e_data_ports %}
+E2E_PORT_NAME{{ loop.index }}={{ item.port_name }}
+{% if item.vnic_type != 'direct-physical' %}
+E2E_INTF_MAC{{ loop.index }}={{ item.mac_address }}
+{% endif %}
+{% endfor %}
+{% if mgmt_port is defined %}
+INTF_MGMT_CIDR={{ mgmt_cidr }}
+INTF_MGMT_IP_GW={{ mgmt_ipgw }}
+INTF_MAC_MGMT={{ mgmt_port.mac_address }}
+{% endif %}
+ACTION={{ generator_scenario }}
+{% if dns_servers is defined %}
+DNS_SERVERS={{ dns_servers }}
+{% endif %}
+CLOUD_DETAIL=openstack

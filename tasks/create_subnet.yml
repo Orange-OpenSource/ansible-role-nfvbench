@@ -1,0 +1,48 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Get the subnet info for {{ item.subnet_name }}
+  openstack.cloud.subnets_info:
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.subnet_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: subnet_info
+
+- name: Register subnet id
+  set_fact:
+    subnet_ids: "{{ subnet_ids | default({}) | combine( { item.network_name: subnet_info.openstack_subnets[0].id } ) }}"
+  when: subnet_info.openstack_subnets | length > 0
+
+- name: Create the subnet {{ item.subnet_name }}
+  openstack.cloud.subnet:
+    state: present
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.subnet_name }}"
+    network_name: "{{ item.network_name }}"
+    gateway_ip: "{{ item.gateway }}"
+    project: "{{ project_id }}"
+    cidr: "{{ item.cidr }}"
+    enable_dhcp: "{{ item.enable_dhcp }}"
+    no_gateway_ip: "{{ item.no_gateway_ip }}"
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - admin | bool
+    - subnet_info.openstack_subnets | length == 0
+  register: subnet
+# Get info after creation to save subnet id
+- name: Get the subnet info for {{ item.subnet_name }}
+  openstack.cloud.subnets_info:
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.subnet_name }}"
+  register: subnet_info
+  when:
+    - subnet is changed
+
+- name: Register subnet id
+  set_fact:
+    subnet_ids: "{{ subnet_ids | default({}) | combine( { item.network_name: subnet_info.openstack_subnets[0].id } ) }}"
+  when: subnet is changed

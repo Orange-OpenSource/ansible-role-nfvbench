@@ -1,0 +1,50 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Verify if generator image {{ generator_image_name }} exists on openstack
+  openstack.cloud.image_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    image: "{{ generator_image_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: image
+  when:
+    - generator_image_name != None
+
+- name: Upload generator image {{ generator_image_name }}
+  openstack.cloud.image:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ generator_image_name }}"
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    validate_certs: "{{ validate_certs }}"
+    filename: "{{ images_path + generator_image_filename }}"
+  when:
+    - generator_image_filename != None
+    - not image.openstack_image
+
+- name: Verify if loop VM {{ loop_vm_image_name }} image exists on openstack
+  openstack.cloud.image_info:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    image: "{{ loop_vm_image_name }}"
+    validate_certs: "{{ validate_certs }}"
+  register: loopvm_image
+  when:
+    - loop_vm_image_name != None
+
+- name: Upload loop VM image {{ loop_vm_image_name }}
+  openstack.cloud.image:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    name: "{{ loop_vm_image_name }}"
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: "{{ images_path + loop_vm_image_filename }}"
+    validate_certs: "{{ validate_certs }}"
+  when:
+    - loop_vm_image_filename != None
+    - not loopvm_image.openstack_image

@@ -1,0 +1,54 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Get networks for loopback scenario
+  set_fact:
+    internal_networks: "{{ internal_networks | default([]) + [item] }}"
+  with_items:
+    - "{{ generator_networks }}"
+  when:
+    - item.topology is defined
+    - item.topology == 'loopback' or item.topology == 'loopback_e2e'
+
+- name: Set loopback vlans
+  set_fact:
+    vlans: "{{ loopback_vlans }}"
+    file_name: 'loopback.cfg'
+
+- name: Create the nfvbench config for loopback scenario
+  template:
+    src: nfvbench.cfg.j2
+    dest: "{{ file_name }}"
+    variable_start_string: '[['
+    variable_end_string: ']]'
+    mode: '0644'
+
+- name: Set default value for internal_networks variable
+  set_fact:
+    internal_networks: []
+
+- name: Get networks for e2e scenario
+  set_fact:
+    internal_networks: "{{ internal_networks | default([]) + [item] }}"
+  with_items:
+    - "{{ loop_vm_networks }}"
+  when:
+    - item.topology is defined
+    - item.topology == 'e2e' or item.topology == 'loopback_e2e'
+
+- name: Set e2e vlans
+  set_fact:
+    vlans: "{{ e2e_vlans }}"
+    file_name: 'e2e.cfg'
+
+- name: Create the nfvbench config for e2e scenario
+  template:
+    src: nfvbench.cfg.j2
+    dest: "{{ file_name }}"
+    variable_start_string: '[['
+    variable_end_string: ']]'
+    mode: '0644'

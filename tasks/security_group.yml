@@ -1,0 +1,46 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Create nfvbench security group {{ security_group_name }}
+  openstack.cloud.security_group:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    name: "{{ security_group_name }}"
+    description: Security group for nfvbench
+    validate_certs: "{{ validate_certs }}"
+  register: security_group
+
+- name: Create security group rule for ping
+  openstack.cloud.security_group_rule:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    security_group: "{{ security_group.id }}"
+    protocol: icmp
+    remote_ip_prefix: 0.0.0.0/0
+    validate_certs: "{{ validate_certs }}"
+
+- name: Create security group rule for SSH
+  openstack.cloud.security_group_rule:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    security_group: "{{ security_group.id }}"
+    protocol: tcp
+    port_range_min: 22
+    port_range_max: 22
+    remote_ip_prefix: 0.0.0.0/0
+    validate_certs: "{{ validate_certs }}"
+
+- name: Create security group rule for TCP
+  openstack.cloud.security_group_rule:
+    cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
+    state: present
+    security_group: "{{ security_group.id }}"
+    protocol: tcp
+    port_range_min: 1
+    port_range_max: 65535
+    remote_ip_prefix: 0.0.0.0/0
+    validate_certs: "{{ validate_certs }}"

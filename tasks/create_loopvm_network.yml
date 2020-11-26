@@ -1,0 +1,55 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+- name: Create the provider network for loop VM
+  openstack.cloud.network:
+    state: present
+    cloud: "{{ cloud_detail }}"
+    name: "{{ item.network_name }}"
+    project: "{{ project_id }}"
+    provider_physical_network: "{{ item.physical_network | default(omit) }}"
+    provider_network_type: "{{ item.network_type | default(omit) }}"
+    provider_segmentation_id: "{{ item.segmentation_id | default(omit) | int }}"
+    external: "{{ item.external }}"
+    shared: "{{ item.shared }}"
+  when:
+    - admin | bool
+    - item.segmentation_id is defined
+  register: network
+
+
+- name: Get vlan id for loopback from openstack
+  set_fact:
+    loopback_vlans: "{{ loopback_vlans | default([]) + [network.network['provider:segmentation_id'],network.network['provider:segmentation_id']] }}"
+  when:
+    - admin | bool
+    - loopback_vlans is not defined
+    - not item.segmentation_id
+
+- name: Get vlan id for loopback from ansible config
+  set_fact:
+    loopback_vlans: "{{ loopback_vlans | default([]) + [item.segmentation_id | int,item.segmentation_id | int] }}"
+  when:
+    - loopback_vlans is not defined
+    - item.segmentation_id
+
+- name: Get vlan id for e2e from openstack
+  set_fact:
+    e2e_vlans: "{{ e2e_vlans | default([]) + [network.network['provider:segmentation_id']] }}"
+  when:
+    - admin | bool
+    - item.topology is defined
+    - item.topology == 'e2e' or item.topology == 'loopback_e2e'
+    - not item.segmentation_id
+
+- name: Get vlan id for e2e from ansible config
+  set_fact:
+    e2e_vlans: "{{ e2e_vlans | default([]) + [item.segmentation_id | int] }}"
+  when:
+    - item.topology is defined
+    - item.topology == 'e2e' or item.topology == 'loopback_e2e'
+    - item.segmentation_id
