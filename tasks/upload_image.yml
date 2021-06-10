@@ -23,6 +23,8 @@
     state: present
     validate_certs: "{{ validate_certs }}"
     filename: "{{ images_path + generator_image_filename }}"
+    properties:
+      hw_vif_multiqueue_enabled: true
   when:
     - generator_image_filename != None
     - not image.openstack_image
@@ -44,6 +46,8 @@
     disk_format: qcow2
     state: present
     filename: "{{ images_path + loop_vm_image_filename }}"
+    properties:
+      hw_vif_multiqueue_enabled: true
     validate_certs: "{{ validate_certs }}"
   when:
     - loop_vm_image_filename != None
