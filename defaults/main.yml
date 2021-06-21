@@ -34,10 +34,10 @@ cacert_file_name: ca.pem
 # Images location
 images_path: './images/'
 # Images details
-loop_vm_image_name: 'nfvbenchvm-0.13'
-loop_vm_image_filename: nfvbenchvm_centos-0.13.qcow2
-generator_image_name: 'nfvbenchvm-generator-0.13'
-generator_image_filename: nfvbenchvm_centos-generator-0.13.qcow2
+loop_vm_image_name: 'nfvbenchvm-0.15'
+loop_vm_image_filename: nfvbenchvm_centos-0.15.qcow2
+generator_image_name: 'nfvbenchvm-generator-0.15'
+generator_image_filename: nfvbenchvm_centos-generator-0.15.qcow2
 
 # NFVbench scenario (e2e or loopback)
 generator_scenario: e2e
