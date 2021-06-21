@@ -204,6 +204,17 @@ nfvbench_config:
   user_label:
   service_chain: PVP
   vm_forwarder: 'vpp'
+
+  # vif_multiqueue_size controls the number of queues of network interfaces
+  # configured inside the loop VM.  It must be the same as the number of queues
+  # configured on virtio ports by virsh, ie it must be equal to the number of
+  # vcpus of the loop VM with a maximum of 8.  Examples:
+  # - 1 vcpu => vif_multiqueue_size: 1
+  # - 2 vcpus => vif_multiqueue_size: 2
+  # - 8 vcpus => vif_multiqueue_size: 8
+  # - 10 vcpus => vif_multiqueue_size: 8
+  vif_multiqueue_size: 8
+
   num_mbufs: 128000
   service_chain_shared_net: 'true'
   vlan_tagging: 'false'
