@@ -44,6 +44,15 @@ https://github.com/Orange-OpenSource/ansible-role-nfvbench
 See [CHANGELOG.md](docs/CHANGELOG.md)
 
 
+## Requirements
+
+TODO: document general requirements (sriov compute node, xtesting, ...)
+
+The publication of test results and artefacts to xtesting databases (results to
+testapi and artefacts to s3) done by the generator VM cannot be disabled: it is
+necessary to have a valid xtesting backend in place to use.
+
+
 ## Installation
 
 Several dependencies have to be installed before `ansible-role-nfvbench` can be
