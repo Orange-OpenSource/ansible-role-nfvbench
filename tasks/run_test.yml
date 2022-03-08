@@ -55,6 +55,9 @@
         - TEST_DB_URL: "{{ lookup('env', 'TEST_DB_URL') }}"
         - TEST_DB_EXT_URL: "{{ lookup('env', 'TEST_DB_EXT_URL') }}"
         - NODE_NAME: "{{ lookup('env', 'NODE_NAME') }}"
+        - PROJECT_NAME: "{{ lookup('env', 'PROJECT_NAME') }}"
+        - INSTALLER_TYPE: "{{ lookup('env', 'INSTALLER_TYPE') }}"
+        - DEPLOY_SCENARIO: "{{ lookup('env', 'DEPLOY_SCENARIO') }}"
         - BUILD_TAG: "{{ lookup('env', 'BUILD_TAG') }}"
         - "{{ NFVBENCH_ENV }}"
       register: result
