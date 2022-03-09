@@ -69,7 +69,7 @@
       no_log: false
   always:
     - name: Compress results
-      archive:
+      community.general.archive:
         path: /var/lib/xtesting/results
         dest: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz
         format: gz

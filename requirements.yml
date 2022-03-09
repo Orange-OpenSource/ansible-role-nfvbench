@@ -1,3 +1,9 @@
 ---
 collections:
   - name: openstack.cloud
+    version: 1.5.3
+    type: galaxy
+
+  - name: community.general
+    version: 4.2.0
+    type: galaxy
