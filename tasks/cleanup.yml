@@ -12,6 +12,7 @@
     name: "{{ generator_vm[0].server_name }}"
     delete_fip: yes
     validate_certs: "{{ validate_certs }}"
+    timeout: 300
 
 - name: Delete the loop VM
   openstack.cloud.server:
@@ -20,6 +21,7 @@
     name: "{{ nfvbench_config.loop_vm_name }}0"
     delete_fip: yes
     validate_certs: "{{ validate_certs }}"
+    timeout: 300
   when:
     - nfvbench_config is defined
     - nfvbench_config.loop_vm_name is defined
