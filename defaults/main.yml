@@ -44,27 +44,73 @@ generator_scenario: e2e
 # NFVbench test case (characterization, non-regression). See NFVbench source code (xtesting/testcases.yaml) for more information.
 test_case: characterization
 
-# NFVbench flavors for generator VM or loop VM (list is not exhaustive, add flavor(s) depending on compute nodes to test)
+# --------------------------------------------------------------------------------
+# Flavors
+# --------------------------------------------------------------------------------
+# Examples of OpenStack flavors:
+# - for a traffic generator VM: flavor_nfvbench_sriov
+# - for a loop VM: flavor_nfvbench_dpdk, flavor_nfvbench_intensive,
+#   flavor_nfvbench_basic
+#
+# Those flavors probably need to be adjusted depending on OpenStack
+# configuration, but they provide a sensible starting point in terms of
+# dimensioning and extra specs for different classes of compute nodes:
+#
+# - flavor_nfvbench_sriov: to deploy traffic generator VMs with CPU pinning and
+#   huge pages on a compute node with SR-IOV support
+#
+# - flavor_nfvbench_dpdk: to deploy loop VMs with CPU pinning and huge pages on
+#   a compute node with Open vSwitch DPDK support
+#
+# - flavor_nfvbench_intensive: to deploy loop VMs with CPU pinning and huge
+#   pages on a compute node configured to host CPU-intensive workloads.
+#
+# - flavor_nfvbench_basic: to deploy loop VMs on a general purpose compute node.
+#
+# Those flavors define aggregate_instance_extra_specs parameters in order to
+# target different classes of compute nodes.  They must match host aggregate
+# properties.
+# --------------------------------------------------------------------------------
+
 flavors:
   - flavor_name: flavor_nfvbench_sriov
     flavor_ram: 16384
     flavor_vcpus: 9
     flavor_disk: 24
     flavor_extra_specs:
-      hw:numa_nodes: 1
       hw:cpu_policy: dedicated
       hw:cpu_thread_policy: isolate
       hw:emulator_threads_policy: share
       hw:mem_page_size: large
+      aggregate_instance_extra_specs:compute_sriov: 'true'
+
   - flavor_name: flavor_nfvbench_dpdk
     flavor_ram: 16384
     flavor_vcpus: 9
     flavor_disk: 24
     flavor_extra_specs:
-      hw:numa_nodes: 1
       hw:cpu_policy: dedicated
       hw:emulator_threads_policy: share
       hw:mem_page_size: large
+      aggregate_instance_extra_specs:compute_dpdk: 'true'
+
+  - flavor_name: flavor_nfvbench_intensive
+    flavor_ram: 16384
+    flavor_vcpus: 9
+    flavor_disk: 24
+    flavor_extra_specs:
+      hw:cpu_policy: dedicated
+      hw:emulator_threads_policy: share
+      hw:mem_page_size: large
+      aggregate_instance_extra_specs:compute_intensive: 'true'
+
+  - flavor_name: flavor_nfvbench_basic
+    flavor_ram: 16384
+    flavor_vcpus: 9
+    flavor_disk: 24
+    flavor_extra_specs:
+      aggregate_instance_extra_specs:compute_basic: 'true'
+
 
 # Router name to create or reuse for management connectivity between external network and management network
 router_name: router_nfvbench
