@@ -34,6 +34,7 @@
 - name: Init NFVbench environment variables for behave test scenario
   set_fact:
     NFVBENCH_ENV: "{{ NFVBENCH_ENV | default({}) }}"
+
 - name: Set NFVbench environment variables for behave test scenario
   set_fact:
     NFVBENCH_ENV: "{{ NFVBENCH_ENV | combine({item: lookup('env', item)}) }}"
@@ -67,6 +68,7 @@
       become: true
       changed_when: false
       no_log: false
+
   always:
     - name: Compress results
       community.general.archive:
@@ -79,6 +81,7 @@
       no_log: true
       when:
         - dump_results
+
     - name: Dump results archive
       fetch:
         src: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz

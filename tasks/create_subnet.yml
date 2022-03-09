@@ -33,6 +33,7 @@
     - admin | bool
     - subnet_info.openstack_subnets | length == 0
   register: subnet
+
 # Get info after creation to save subnet id
 - name: Get the subnet info for {{ item.subnet_name }}
   openstack.cloud.subnets_info:
