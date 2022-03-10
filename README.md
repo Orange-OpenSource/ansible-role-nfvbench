@@ -12,6 +12,8 @@ The role includes tasks using the `openstack.cloud` Ansible Collection.
 
 - [NFVbench Ansible role](#nfvbench-ansible-role)
     - [Contents](#contents)
+    - [Source code](#source-code)
+    - [Releases](#releases)
     - [Installation](#installation)
         - [Install Python and Git](#install-python-and-git)
         - [Install OpenStack SDK](#install-openstack-sdk)
@@ -29,6 +31,17 @@ The role includes tasks using the `openstack.cloud` Ansible Collection.
     - [License](#license)
 
 <!-- markdown-toc end -->
+
+
+## Source code
+
+`ansible-role-nfvbench` is hosted on GitHub in the Orange-OpenSource organization:
+https://github.com/Orange-OpenSource/ansible-role-nfvbench
+
+
+## Releases
+
+See [CHANGELOG.md](docs/CHANGELOG.md)
 
 
 ## Installation
