@@ -90,7 +90,7 @@
   register: nfvbench_vm
 
 - name: Attach floating ip from external network
-  openstack.cloud.os_floating_ip:
+  openstack.cloud.floating_ip:
     cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"
     state: present
     network: "{{ external_network_name }}"
