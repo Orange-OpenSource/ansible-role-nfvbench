@@ -1,6 +1,22 @@
 ansible-role-nfvbench Release Notes
 ===================================
 
+0.3.1 (2022-03-17)
+------------------
+
+### Release Summary
+
+Bugfix release.
+
+
+### Changes
+
+- Fix results archive not created when the `BUILD_TAG` environment variable
+  contains a slash.
+- Increase server create timeout from 3mn to 5m for the traffic generator VM.
+- Stop using the deprecated Ansible plugin `openstack.cloud.os_floating_ip`, use
+  `openstack.cloud.floating_ip` instead.
+
 
 0.3.0 (2022-03-10)
 ------------------
