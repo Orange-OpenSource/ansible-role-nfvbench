@@ -70,10 +70,18 @@
       no_log: false
 
   always:
+    - name: Build test results archive file name
+      set_fact:
+        test_results_archive: results-{{ lookup('env', 'BUILD_TAG') | regex_replace("[^-A-Za-z0-9]", "_") }}.tar.gz
+        # Remark: we use the BUILD_TAG to name the test results archive file,
+        # but we must remove special characters, especially the slash / that
+        # would prevent the creation of the archive file.  We substitute those
+        # characters with an underscore _.
+
     - name: Compress results
       community.general.archive:
         path: /var/lib/xtesting/results
-        dest: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz
+        dest: /tmp/{{ test_results_archive }}
         format: gz
         mode: 0644
       delegate_to: generator
@@ -84,7 +92,7 @@
 
     - name: Dump results archive
       fetch:
-        src: /tmp/results-{{ lookup('env', 'BUILD_TAG') }}.tar.gz
+        src: /tmp/{{ test_results_archive }}
         dest: "{{ dump_path }}"
         flat: yes
       delegate_to: generator
