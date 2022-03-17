@@ -86,6 +86,7 @@
           /etc/rc.local
       {% endraw %}
     validate_certs: "{{ validate_certs }}"
+    timeout: 300
   register: nfvbench_vm
 
 - name: Attach floating ip from external network
