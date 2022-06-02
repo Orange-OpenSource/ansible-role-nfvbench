@@ -69,21 +69,22 @@
     search_regex: OpenSSH
     delay: 5
   register: ssh_wait_check
-  retries: 20
+  retries: 20  # 20 * 5 seconds = 1mn40
   delay: 5
   until: ssh_wait_check is succeeded
   become: true
   no_log: true
 
-- name: health check NFVbench is running
+- name: Health check NFVbench is running
   uri:
     url: "http://{{ nfvbench_vm_ip }}:7555/version"
     method: GET
     return_content: yes
   register: _result
   until: _result.status == 200
-  retries: 720  # 720 * 5 seconds = 1hour (60*60/5)
+  retries: 24  # 24 * 5 seconds = 2mn
   delay: 5  # Every 5 seconds
+
 - name: NFVbench running version
   debug:
     msg: "{{ _result.content }}"
