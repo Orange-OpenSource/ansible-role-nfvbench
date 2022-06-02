@@ -62,8 +62,10 @@
         - BUILD_TAG: "{{ lookup('env', 'BUILD_TAG') }}"
         - "{{ NFVBENCH_ENV }}"
       register: result
-      failed_when:
-        - "'Traceback' in result.stdout or 'TrafficClientException' in result.stdout or 'Result.EX_ERROR' in result.stdout"
+      failed_when: >
+        (result.rc != 0) or
+        ('TrafficClientException' in result.stdout) or
+        ('Traceback' in result.stdout)
       delegate_to: generator
       become: true
       changed_when: false
