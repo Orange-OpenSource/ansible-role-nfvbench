@@ -147,6 +147,7 @@
     validate_certs: "{{ validate_certs }}"
   when:
     - admin | bool
+    - generator_image.openstack_image != None
     - generator_image.openstack_image.owner == project_id
 
 - name: Get loopvm image info
@@ -164,6 +165,7 @@
     validate_certs: "{{ validate_certs }}"
   when:
     - admin | bool
+    - loop_vm_image.openstack_image != None
     - loop_vm_image.openstack_image.owner == project_id
 
 - name: Delete NFVbench project
