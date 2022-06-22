@@ -13,6 +13,7 @@
     delete_fip: yes
     validate_certs: "{{ validate_certs }}"
     timeout: 300
+  when: project_id is defined
 
 - name: Delete the loop VM
   openstack.cloud.server:
@@ -23,6 +24,7 @@
     validate_certs: "{{ validate_certs }}"
     timeout: 300
   when:
+    - project_id is defined
     - nfvbench_config is defined
     - nfvbench_config.loop_vm_name is defined
 
@@ -32,6 +34,7 @@
     state: absent
     name: "{{ router_name }}"
     validate_certs: "{{ validate_certs }}"
+  when: project_id is defined
 
 - name: Delete the port
   openstack.cloud.port:
@@ -44,6 +47,7 @@
     - "{{ generator_networks }}"
     - "{{ management_networks }}"
   when:
+    - project_id is defined
     - item.port_name is defined
 
 - name: Get loop VM ports list (left)
@@ -52,6 +56,7 @@
     port: "{{ nfvbench_config.loop_vm_name }}0-0"
     validate_certs: "{{ validate_certs }}"
   register: loopvm_left_ports
+  when: project_id is defined
 
 - name: Delete loop VM left port
   openstack.cloud.port:
@@ -61,6 +66,7 @@
     validate_certs: "{{ validate_certs }}"
   with_items:
     - "{{ loopvm_left_ports.openstack_ports }}"
+  when: project_id is defined
 
 - name: Get loop VM ports list (right)
   openstack.cloud.port_info:
@@ -68,6 +74,7 @@
     port: "{{ nfvbench_config.loop_vm_name }}0-1"
     validate_certs: "{{ validate_certs }}"
   register: loopvm_right_ports
+  when: project_id is defined
 
 - name: Delete loop VM right port
   openstack.cloud.port:
@@ -77,6 +84,7 @@
     validate_certs: "{{ validate_certs }}"
   with_items:
     - "{{ loopvm_right_ports.openstack_ports }}"
+  when: project_id is defined
 
 - name: Delete subnets
   openstack.cloud.subnet:
@@ -90,6 +98,7 @@
     - "{{ loop_vm_networks }}"
     - "{{ management_networks }}"
   when:
+    - project_id is defined
     - item.cleanup is defined
     - item.cleanup|bool
 
@@ -120,6 +129,7 @@
     name: "{{ security_group_name }}"
     validate_certs: "{{ validate_certs }}"
   when:
+    - project_id is defined
     - security_group_name is defined
     - security_group_name
 
@@ -138,6 +148,7 @@
     image: "{{ generator_image_name }}"
     validate_certs: "{{ validate_certs }}"
   register: generator_image
+  when: project_id is defined
 
 - name: Delete generator image
   openstack.cloud.image:
@@ -146,6 +157,7 @@
     state: absent
     validate_certs: "{{ validate_certs }}"
   when:
+    - project_id is defined
     - generator_image.openstack_image != None
     - generator_image.openstack_image.owner == project_id
 
@@ -155,6 +167,7 @@
     image: "{{ loop_vm_image_name }}"
     validate_certs: "{{ validate_certs }}"
   register: loop_vm_image
+  when: project_id is defined
 
 - name: Delete loopvm image
   openstack.cloud.image:
@@ -163,6 +176,7 @@
     state: absent
     validate_certs: "{{ validate_certs }}"
   when:
+    - project_id is defined
     - loop_vm_image.openstack_image != None
     - loop_vm_image.openstack_image.owner == project_id
 

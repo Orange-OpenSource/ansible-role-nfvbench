@@ -33,12 +33,28 @@
     - admin | bool
     - not deploy | bool
     - project_id is not defined
+    - openstack_project_info.openstack_projects | length > 0
 
 - name: Extract NFvbench project_id from clouds.yaml
   set_fact:
     project_id: "{{ cloud_data.clouds[cloud_detail].auth.project_id }}"
   when:
     - not admin | bool
+    - project_id is not defined
+
+- name: Fail if the NFVbench project ID cannot be found
+  # At that point, we should have a project_id for the NFVbench project (the
+  # NFVbench project is the OpenStack project whose name can be found in the
+  # project_name Ansible variable).  Unless we are only doing a cleanup, this is
+  # abnormal, so we stop with a clear error message.
+  ansible.builtin.fail:
+    msg: >
+      No project ID could be found for the {{ project_name }} OpenStack project.
+      It you are running the ansible-role-nfvbench role as a non-admin
+      OpenStack user, you should make sure that the project has been pre-created
+      by an OpenStack administrator.
+  when:
+    - deploy | bool or run_test | bool
     - project_id is not defined
 
 - name: Set openstack variables as Ansible facts from clouds.yaml file
@@ -52,6 +68,7 @@
     OS_REGION_NAME: "{{ cloud_data.clouds[cloud_detail].region_name }}"
     OS_PROJECT_DOMAIN_NAME: "{{ project_domain_name }}"
   no_log: true
+  when: project_id is defined
 
 - name: Generate clouds.yaml file for NFVbench user in NFVbench generator VM
   template:
@@ -59,12 +76,14 @@
     dest: clouds-nfvbench.yaml
     mode: '0644'
   no_log: true
+  when: project_id is defined
 
 - name: Set CACERT env variable
   set_fact:
     OS_CACERT: "{{ cloud_data.clouds[cloud_detail].cacert }}"
   ignore_errors: true
   no_log: true
+  when: project_id is defined
 
 - name: Generate clouds-user.yaml file for NFVbench user
   # This one is for use by ansible-role-nfvbench when operating as a non-admin
@@ -74,3 +93,4 @@
     dest: clouds-user.yaml
     mode: '0644'
   no_log: true
+  when: project_id is defined
