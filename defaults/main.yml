@@ -1,12 +1,68 @@
 ---
-# flags to enable/disable steps
+# --------------------------------------------------------------------------------
+# Flags to enable/disable steps
+# --------------------------------------------------------------------------------
+
+# By default, ansible-role-nfvbench will deploy a traffic generator, run a
+# Xtesting test case and cleanup the OpenStack resources it created.  It is
+# possible to limit the scope of the role by changing the boolean variables that
+# control the main operations: deploy, run_test and cleanup.
+#
+# deploy: when true, create all the OpenStack resources needed to run nfvbench
+# inside a traffic generator VM: the NFVbench project, the NFVbench user,
+# flavors for the traffic generator VM and the loop VM, images for the traffic
+# generator VM and the loop VM, networks, ...  Whenever possible,
+# ansible-role-nfvbench re-uses existing resources.  This is especially useful
+# when the OpenStack user is not an admin and when those resources have been
+# pre-created.
+#
+# run_test: when true, run the Xtesting test case specified by the test_case
+# Ansible variable.
+#
+# cleanup: when true, cleanup all the OpenStack resources created at deployment
+# and during the tests, including the loop VM created by nfvbench itself.  If
+# the first OpenStack user is not an admin, the resources pre-created by an
+# admin will not be deleted.  This includes all virtual networks and flavors,
+# the NFVbench project and the NFVbench user.
+#
 deploy: true
 run_test: true
 cleanup: true
+
+# Whether the first OpenStack user is supposed to be an administrator.  This
+# will be checked at runtime and possibly result in the modification of the
+# admin variable to reflect the actual admin status.
+#
+# Whatever the admin status of the first user, its credentials must be placed in
+# a clouds.yaml file in the current directory, and the name of the cloud to use
+# is defined by the cloud_detail Ansible variable.
+#
+# Remark: in case the creation of a second user is requested (see user_creation
+# variable below), that second user will not be an OpenStack administrator by
+# default.
 admin: true
+
+# Whether the NFVbench OpenStack project should be created.  Overriding the
+# project_name variable allows to change the name of that project.  When
+# tenant_creation is set to false, the NFVbench user must be pre-created by an
+# administrator.
 tenant_creation: true
+
+# Whether the non-admin NFVbench OpenStack user should be created.  Overriding
+# the username variable allows to change the name of that user.  When
+# user_creation is set to false, the NFVbench user must be pre-created by an
+# administrator.
 user_creation: true
+
+# Whether an archive of the Xtesting artifacts should be created and copied to
+# the Ansible controller machine.  This is meaningful only when run_test is
+# true.
 dump_results: true
+
+
+# --------------------------------------------------------------------------------
+# General configuration
+# --------------------------------------------------------------------------------
 
 validate_certs: null
 floating_ip_timeout: 180
