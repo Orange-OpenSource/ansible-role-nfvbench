@@ -1,5 +1,0 @@
----
-- hosts: localhost
-  vars_files: vars/vars.yml
-  roles:
-    - role: cleanup
