@@ -45,7 +45,7 @@
 
 - name: Run tests
   block:
-    - name: Run Xtesting NFVbench scenario
+    - name: "Run NFVbench Xtesting test case: {{ test_case }}"
       command: run_tests -t {{ test_case }} -p -r
       environment:
         - S3_ENDPOINT_URL: "{{ lookup('env', 'S3_ENDPOINT_URL') }}"
@@ -72,7 +72,7 @@
       no_log: false
 
   always:
-    - name: Build test results archive file name
+    - name: Set test results archive file name
       set_fact:
         test_results_archive: results-{{ lookup('env', 'BUILD_TAG') | regex_replace("[^-A-Za-z0-9]", "_") }}.tar.gz
         # Remark: we use the BUILD_TAG to name the test results archive file,

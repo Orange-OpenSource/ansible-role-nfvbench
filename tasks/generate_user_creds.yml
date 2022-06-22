@@ -16,7 +16,7 @@
     cloud_data: "{{ lookup('file', 'clouds.yaml') | from_yaml  }}"
   no_log: true
 
-- name: Get project info from openstack API
+- name: Get NFVbench project info from openstack API
   openstack.cloud.project_info:
     cloud: "{{ cloud_detail }}"
     name: "{{ project_name }}"
@@ -26,7 +26,7 @@
     - not deploy | bool
     - project_id is not defined
 
-- name: Extract project id from openstack API
+- name: Extract NFVbench project id from openstack API
   set_fact:
     project_id: "{{ openstack_project_info.openstack_projects[0].id }}"
   when:
@@ -34,7 +34,7 @@
     - not deploy | bool
     - project_id is not defined
 
-- name: Extract project_id from clouds.yaml
+- name: Extract NFvbench project_id from clouds.yaml
   set_fact:
     project_id: "{{ cloud_data.clouds[cloud_detail].auth.project_id }}"
   when:
@@ -53,7 +53,7 @@
     OS_PROJECT_DOMAIN_NAME: "{{ project_domain_name }}"
   no_log: true
 
-- name: Generate clouds.yaml file for NFVbench generator VM
+- name: Generate clouds.yaml file for NFVbench user in NFVbench generator VM
   template:
     src: clouds-nfvbench.yaml.j2
     dest: clouds-nfvbench.yaml
@@ -66,7 +66,9 @@
   ignore_errors: true
   no_log: true
 
-- name: Generate clouds-user.yaml file for current user
+- name: Generate clouds-user.yaml file for NFVbench user
+  # This one is for use by ansible-role-nfvbench when operating as a non-admin
+  # OpenStack user
   template:
     src: clouds.yaml.j2
     dest: clouds-user.yaml

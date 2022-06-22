@@ -41,6 +41,8 @@
       no_log: true
 
     - name: Check user is admin
+      # We check the user is admin by trying to list users, which is an
+      # operation that requires admin rights.
       openstack.cloud.identity_user_info:
         cloud: "{{ cloud_detail }}"
         validate_certs: "{{ validate_certs }}"
@@ -48,60 +50,69 @@
       ignore_errors: true
       no_log: true
 
-    - name: Register admin status
+    - name: Clear admin variable
       set_fact:
         admin: False
       when:
         - user_info is failed
 
-    - include_tasks: create_tenant.yml
+    - name: Create NFVbench project and user
+      include_tasks: create_tenant.yml
       when: deploy | bool
 
-    - include_tasks: generate_user_creds.yml
+    - name: Generate clouds.yaml files for NFVbench user in NFVbench project
+      include_tasks: generate_user_creds.yml
 
-    - include_tasks: create_flavor.yml
+    - name: Create flavors for NFVbench traffic generator and loop VMs
+      include_tasks: create_flavor.yml
       with_items: "{{ flavors }}"
       when:
         - admin | bool
         - deploy | bool
 
-    - include_tasks: security_group.yml
+    - name: Create security group for the management ports of the VMs
+      include_tasks: security_group.yml
       when:
         - deploy | bool
         - security_group_name is defined
         - security_group_name
 
-    - include_tasks: create_management_network.yml
+    - name: Create management networks for the traffic generator and loop VMs
+      include_tasks: create_management_network.yml
       with_items: "{{ management_networks }}"
       when:
         - deploy | bool
         - management_networks is defined
 
-    - include_tasks: create_subnet.yml
+    - name: Create subnets for the management networks
+      include_tasks: create_subnet.yml
       with_items: "{{ management_networks }}"
       when:
         - deploy | bool
         - management_networks is defined
 
-    - include_tasks: create_port.yml
+    - name: Create management ports
+      include_tasks: create_port.yml
       with_items: "{{ management_networks }}"
       when:
         - deploy | bool
         - item.port_name is defined
 
-    - include_tasks: create_loopvm_network.yml
+    - name: Create networks for the loop VM
+      include_tasks: create_loopvm_network.yml
       with_items: "{{ loop_vm_networks }}"
       when:
         - deploy | bool
         - loop_vm_networks is defined
 
-    - include_tasks: create_subnet.yml
+    - name: Create subnets for the loop VM
+      include_tasks: create_subnet.yml
       with_items: "{{ loop_vm_networks }}"
       when:
         - deploy | bool
         - loop_vm_networks is defined
 
-    - name: filter e2e generator networks
+    - name: Filter e2e generator networks
       set_fact:
         generator_networks_e2e: "{{ generator_networks_e2e | default([]) + [item] }}"
       with_items: "{{ generator_networks }}"
@@ -110,7 +121,8 @@
         - item.topology is defined
         - item.topology == 'e2e' or item.topology == 'loopback_e2e'
 
-    - include_tasks: create_generator_network.yml
+    - name: Create networks for the traffic generator VM (e2e case)
+      include_tasks: create_generator_network.yml
       with_together:
         - "{{ generator_networks_e2e }}"
         - "{{ e2e_vlans }}"
@@ -118,7 +130,7 @@
         - deploy | bool
         - generator_networks_e2e is defined
 
-    - name: filter loopback generator networks
+    - name: Filter loopback generator networks
       set_fact:
         generator_networks_loopback: "{{ generator_networks_loopback | default([]) + [item] }}"
       with_items: "{{ generator_networks }}"
@@ -127,7 +139,8 @@
         - item.topology is defined
         - item.topology == 'loopback'
 
-    - include_tasks: create_generator_network.yml
+    - name: Create networks for the traffic generator VM (loopback case)
+      include_tasks: create_generator_network.yml
       with_together:
         - "{{ generator_networks_loopback }}"
         - "{{ loopback_vlans }}"
@@ -135,32 +148,41 @@
         - deploy | bool
         - generator_networks_loopback is defined
 
-    - include_tasks: create_subnet.yml
+    - name: Create subnets for the traffic generator VM
+      include_tasks: create_subnet.yml
       with_items: "{{ generator_networks }}"
       when: deploy | bool
 
-    - include_tasks: create_port.yml
+    - name: Create data ports for the traffic generator VM
+      include_tasks: create_port.yml
       with_items: "{{ generator_networks }}"
       when: deploy | bool
 
-    - include_tasks: create_router.yml
+    - name: Create a virtual router between the management network(s) and the external network
+      include_tasks: create_router.yml
       when: deploy | bool
 
-    - include_tasks: create_config.yml
+    - name: Create nfvbench config files for loopback and e2e scenarios
+      include_tasks: create_config.yml
       when: deploy | bool
 
-    - include_tasks: upload_image.yml
+    - name: Upload traffic generator and loop VM images
+      include_tasks: upload_image.yml
       when: deploy | bool
 
-    - include_tasks: create_server.yml
+    - name: Create traffic generator VM
+      include_tasks: create_server.yml
       when: deploy | bool
 
-    - include_tasks: healthcheck.yml
+    - name: Check SSH and HTTP connectivity with the traffic generator VM
+      include_tasks: healthcheck.yml
       when: deploy | bool or run_test | bool
 
-    - include_tasks: run_test.yml
+    - name: Restart nfvbench and run Xtesting test case
+      include_tasks: run_test.yml
       when: run_test | bool
 
   always:
-    - include_tasks: cleanup.yml
+    - name: Delete the OpenStack resources created by ansible-role-nfvbench
+      include_tasks: cleanup.yml
       when: cleanup | bool
