@@ -5,6 +5,7 @@
 # are made available under the terms of the Apache License, Version 2.0
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
+
 - name: Create NFVbench project
   openstack.cloud.project:
     state: present
@@ -14,16 +15,12 @@
     domain_id: "{{ project_domain_name }}"
     enabled: True
   register: project_info
-  when:
-    - admin | bool
-    - tenant_creation | bool
+  when: tenant_creation | bool
 
 - name: Extract project info
   set_fact:
     project_id: "{{ project_info.project.id }}"
-  when:
-    - admin | bool
-    - project_info is defined
+  when: project_info is defined
 
 - name: Create user
   openstack.cloud.identity_user:
@@ -34,9 +31,7 @@
     update_password: on_create
     domain: "{{ user_domain_name }}"
     default_project: "{{ project_name }}"
-  when:
-    - admin | bool
-    - user_creation | bool
+  when: user_creation | bool
 
 - name: Add user role to project
   openstack.cloud.role_assignment:
@@ -44,6 +39,4 @@
     user: "{{ username }}"
     role: "{{ role }}"
     project: "{{ project_name }}"
-  when:
-    - admin | bool
-    - tenant_creation | bool
+  when: tenant_creation | bool

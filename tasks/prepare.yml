@@ -1,0 +1,68 @@
+---
+# Copyright (c) 2021 Orange
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+
+- name: Read NFVBENCH_NETWORK_VNIC_TYPE environment variable
+  ansible.builtin.set_fact:
+    nfvbench_network_vnic_type: "{{ lookup('env', 'NFVBENCH_NETWORK_VNIC_TYPE') | default('direct', True) }}"
+  # The nfvbench_network_vnic_type Ansible variable is not used directly by
+  # ansible-role-nfvbench, but it can be referenced in the extra_vars Jinja2
+  # template.
+
+- name: Check if a NFVbench template vars file exists
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'extra_vars') }}.j2"
+  register: extra_vars_template
+  ignore_errors: true
+  no_log: true
+
+- name: Create NFVbench vars file
+  ansible.builtin.template:
+    src: "{{ lookup('env', 'extra_vars') }}.j2"
+    dest: "{{ lookup('env', 'extra_vars') }}"
+    mode: '0644'
+  when:
+    - extra_vars_template.stat.exists
+  no_log: true
+
+- name: Check if NFVbench vars file exists
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'extra_vars') }}"
+  register: extra_vars
+  ignore_errors: true
+  no_log: true
+
+- name: Load extra_vars
+  ansible.builtin.include_vars: "{{ lookup('env', 'extra_vars') }}"
+  when:
+    - extra_vars.stat.exists
+  no_log: true
+
+- name: Authenticate to the OpenStack cloud
+  # Early test of OpenStack API availability
+  openstack.cloud.auth:
+    cloud: "{{ cloud_detail }}"
+    validate_certs: "{{ validate_certs }}"
+  no_log: true
+
+- name: Check user is admin
+  # We check the user is admin by trying to list users, which is an
+  # operation that requires admin rights.
+  openstack.cloud.identity_user_info:
+    cloud: "{{ cloud_detail }}"
+    validate_certs: "{{ validate_certs }}"
+  register: user_info
+  ignore_errors: true
+  no_log: true
+  when: admin | bool
+
+- name: Clear admin variable
+  ansible.builtin.set_fact:
+    admin: false
+  when:
+    - admin | bool
+    - user_info is failed

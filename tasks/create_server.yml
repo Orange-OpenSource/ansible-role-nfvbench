@@ -68,7 +68,7 @@
     name: "{{ generator_vm[0].server_name }}"
     flavor: "{{ generator_vm[0].flavor_name }}"
     image: "{{ generator_vm[0].image_name }}"
-    auto_ip: False
+    auto_ip: false
     availability_zone: "{{ generator_vm[0].zone_name }}"
     key_name: "{{ generator_vm[0].keypair_name }}"
     security_groups: "{{ generator_vm[0].security_groups }}"

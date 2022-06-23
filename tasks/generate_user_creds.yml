@@ -76,9 +76,9 @@
     dest: clouds-nfvbench.yaml
     mode: '0644'
   no_log: true
-  when: project_id is defined
+  when: deploy | bool
 
-- name: Set CACERT env variable
+- name: Set OS_CACERT Ansible variable
   set_fact:
     OS_CACERT: "{{ cloud_data.clouds[cloud_detail].cacert }}"
   ignore_errors: true
