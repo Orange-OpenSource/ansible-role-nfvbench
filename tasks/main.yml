@@ -40,6 +40,13 @@
         - extra_vars.stat.exists
       no_log: true
 
+    - name: Authenticate to the OpenStack cloud
+      # Early test of OpenStack API availability
+      openstack.cloud.auth:
+        cloud: "{{ cloud_detail }}"
+        validate_certs: "{{ validate_certs }}"
+      no_log: true
+
     - name: Check user is admin
       # We check the user is admin by trying to list users, which is an
       # operation that requires admin rights.
@@ -49,11 +56,13 @@
       register: user_info
       ignore_errors: true
       no_log: true
+      when: admin | bool
 
     - name: Clear admin variable
       set_fact:
         admin: False
       when:
+        - admin | bool
         - user_info is failed
 
     - name: Create NFVbench project and user
