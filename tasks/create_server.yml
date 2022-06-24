@@ -61,7 +61,7 @@
     - keypair is changed
   no_log: true
 
-- name: Create the server {{ generator_vm[0].server_name }}
+- name: Create traffic generator VM {{ generator_vm[0].server_name }}
   openstack.cloud.server:
     state: present
     cloud: "{{ lookup('file', 'clouds-user.yaml') | from_yaml }}"

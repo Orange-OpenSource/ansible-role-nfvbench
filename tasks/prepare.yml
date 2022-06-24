@@ -13,14 +13,14 @@
   # ansible-role-nfvbench, but it can be referenced in the extra_vars Jinja2
   # template.
 
-- name: Check if a NFVbench template vars file exists
+- name: "Check if a role extra_vars *template* file exists"
   ansible.builtin.stat:
     path: "{{ lookup('env', 'extra_vars') }}.j2"
   register: extra_vars_template
   ignore_errors: true
   no_log: true
 
-- name: Create NFVbench vars file
+- name: Generate the role extra_vars file from the template file
   ansible.builtin.template:
     src: "{{ lookup('env', 'extra_vars') }}.j2"
     dest: "{{ lookup('env', 'extra_vars') }}"
@@ -29,14 +29,14 @@
     - extra_vars_template.stat.exists
   no_log: true
 
-- name: Check if NFVbench vars file exists
+- name: Check if a role extra_vars file exists
   ansible.builtin.stat:
     path: "{{ lookup('env', 'extra_vars') }}"
   register: extra_vars
   ignore_errors: true
   no_log: true
 
-- name: Load extra_vars
+- name: Load the Ansible variables found in the role extra_vars file
   ansible.builtin.include_vars: "{{ lookup('env', 'extra_vars') }}"
   when:
     - extra_vars.stat.exists
