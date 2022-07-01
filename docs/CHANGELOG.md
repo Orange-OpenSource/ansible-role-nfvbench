@@ -1,6 +1,33 @@
 ansible-role-nfvbench Release Notes
 ===================================
 
+0.3.2 (2022-07-01)
+------------------
+
+### Release Summary
+
+Bugfix and small improvements release.
+
+
+### Changes
+
+- Fix undetected test failure when Xtesting `run_tests` command crashes because
+  of a buggy test scenario.
+- Fix the cleanup phase so that it does not fail when some of the OpenStack
+  resources are already deleted.
+- Decrease timeout from 1h to 2mn during connectiviy check with nfvbench HTTP
+  server.
+- Revert the role default config of nfvbench `cache_size` and `no_flow_stats`
+  parameters: use nfvbench default config again (`cache_size=0` and
+  `no_flow_stats=false`)
+- Improve Ansible log messages: add a description (name) to the tasks that
+  include a file, update some existing descriptions to make them (hopfully) more
+  explicit.
+- Add an explicit and early connectivity check of OpenStack API to make it clear
+  when the API is unavailable.
+- Document the main flags that control the role execution.
+
+
 0.3.1 (2022-03-17)
 ------------------
 
