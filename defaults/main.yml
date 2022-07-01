@@ -303,13 +303,6 @@ nfvbench_config:
         zmq_pub_port: 4500
         zmq_rpc_port: 4501
         software_mode: false
-
-  # TRex cache size is useful to generate higher amounts of traffic with lower
-  # CPU resources.  Recomended value after testing with VF/PF and X710/XXV710:
-  cache_size: 16
-  # Needed to reach line rate on 25 Gbps interfaces:
-  no_flow_stats: true
-
   user_label:
   service_chain: PVP
   vm_forwarder: 'vpp'
